@@ -1,0 +1,191 @@
+{
+  "_comment": "Token addresses snapshotted from https://docs.robinhood.com/chain/contracts on 2026-07-10. RE-VERIFY against the docs before every deploy (fake tokens with identical tickers exist). Chainlink feed addresses MUST be filled in from https://docs.chain.link/data-feeds/price-feeds/addresses?network=robinhood \u2014 computeUnits.ts refuses to run while any needed feed is null. heartbeatSeconds comes from the same Chainlink page, per feed.",
+  "sequencerUptimeFeed": null,
+  "constituents": {
+    "AAPL": {
+      "token": "0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9",
+      "feed": "0x6B22A786bAa607d76728168703a39Ea9C99f2cD0",
+      "heartbeatSeconds": 86400
+    },
+    "MSFT": {
+      "token": "0xe93237C50D904957Cf27E7B1133b510C669c2e74",
+      "feed": "0x45C3C877C15E6BA2EBB19eA114Ea508d14C1Af2E",
+      "heartbeatSeconds": 86400
+    },
+    "GOOGL": {
+      "token": "0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3",
+      "feed": "0xF6f373a037c30F0e5010d854385cA89185AE638b",
+      "heartbeatSeconds": 86400
+    },
+    "AMZN": {
+      "token": "0x12f190a9F9d7D37a250758b26824B97CE941bF54",
+      "feed": "0xD5a1508ceD74c084eBf3cBe853e2C968fB2a651C",
+      "heartbeatSeconds": 86400
+    },
+    "META": {
+      "token": "0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35",
+      "feed": "0x7C38C00C30BEe9378381E7B6135d7283356D71b1",
+      "heartbeatSeconds": 86400
+    },
+    "NVDA": {
+      "token": "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
+      "feed": "0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15",
+      "heartbeatSeconds": 86400
+    },
+    "TSLA": {
+      "token": "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
+      "feed": "0x4A1166a659A55625345e9515b32adECea5547C38",
+      "heartbeatSeconds": 86400
+    },
+    "AMD": {
+      "token": "0x86923f96303D656E4aa86D9d42D1e57ad2023fdC",
+      "feed": "0x943A29E7ae51A4798823ca9eEd2ed533B2A22C72",
+      "heartbeatSeconds": 86400
+    },
+    "PLTR": {
+      "token": "0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A",
+      "feed": "0x820ABedFF239034956B7A9d2F0a331f9F075eB4c",
+      "heartbeatSeconds": 86400
+    },
+    "CRWV": {
+      "token": "0x5f10A1C971B69e47e059e1dC91901B59b3fB49C3",
+      "feed": "0xe1b3aABCAFAd1c94708dc1367dcfF8Aa4407487C",
+      "heartbeatSeconds": 86400
+    },
+    "ORCL": {
+      "token": "0xb0992820E760d836549ba69BC7598b4af75dEE03",
+      "feed": "0x0e6a64a2B58A6693a531E6c555f3A5d042eEA844",
+      "heartbeatSeconds": 86400
+    },
+    "CASHCAT": {
+      "token": "0x020bfC650A365f8BB26819deAAbF3E21291018b4",
+      "feed": null,
+      "heartbeatSeconds": 86400,
+      "pool": {
+        "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+        "poolId": "0xee0d95c4644e0847eca78d5f5333abe1ab798b159fdd01712327258a755d4423",
+        "quote": "USDG",
+        "tokenIs0": true
+      }
+    },
+    "VIRTUAL": {
+      "token": "0xc6911796042b15d7Fa4F6CDe69e245DdCd3d9c31",
+      "feed": null,
+      "heartbeatSeconds": 86400,
+      "pool": {
+        "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+        "poolId": "0xa95732060867f07aa9b8ae9a4b7b8d737bc3374f1dfbb952759c5ed676e8737c",
+        "quote": "USDG",
+        "tokenIs0": false
+      }
+    },
+    "VEX": {
+      "token": "0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b",
+      "feed": null,
+      "heartbeatSeconds": 86400,
+      "pool": {
+        "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+        "poolId": "0xbf0b53d7f6551902c467e686994b2e19e0d55119590c4bec3228604e521e9090",
+        "quote": "USDG",
+        "tokenIs0": false
+      }
+    },
+    "HOODRAT": {
+      "token": "0x8e62F281f282686fCa6dCB39288069a93fC23F1c",
+      "feed": null,
+      "heartbeatSeconds": 86400,
+      "pool": {
+        "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+        "poolId": "0xaea1c7ceb6687d4d5ed8ed364a7de97947a8abf326f0aba0984d76797316c5f1",
+        "quote": "ETH",
+        "tokenIs0": false
+      }
+    },
+    "ARROW": {
+      "token": "0xf2915d1e3C1B0c769d0c756Ec43F1c1f6c99cD03",
+      "feed": null,
+      "heartbeatSeconds": 86400,
+      "pool": {
+        "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+        "poolId": "0xc81633b5e47dbeaf6211d9c91447188f69a6268cccdbd775bba2b3b333e68869",
+        "quote": "ETH",
+        "tokenIs0": false
+      }
+    },
+    "VIBECAT": {
+      "token": "0x2355431b83B1A8E40172D099d90243D8D666b56B",
+      "feed": null,
+      "heartbeatSeconds": 86400,
+      "pool": {
+        "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+        "poolId": "0xaecf9c471d75835ef5a39b3bd7f8e359e6cd94c03d689229fac2090e8a0a24d5",
+        "quote": "ETH",
+        "tokenIs0": false
+      }
+    },
+    "SPCX": {
+      "token": "0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa",
+      "feed": "0xB265810950ba6c5C0Ff821c9963014a56fD8Bffb",
+      "heartbeatSeconds": 86400
+    },
+    "MU": {
+      "token": "0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD",
+      "feed": "0x425EEFdCf05ed6526C3cE61Af99429A228a6d596",
+      "heartbeatSeconds": 86400
+    }
+  },
+  "baskets": [
+    {
+      "name": "Vimen MAG7 Basket",
+      "symbol": "MAG7",
+      "outputFile": "../contracts/baskets/mag7.json",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "META",
+        "NVDA",
+        "TSLA"
+      ],
+      "targetUsdPerBasket": 100,
+      "mintFeeBps": 30,
+      "maxSupplyCap": "1000000000000000000000000",
+      "initialSupplyCap": "1000000000000000000000"
+    },
+    {
+      "name": "Vimen Hood Six Basket",
+      "symbol": "HOOD6",
+      "outputFile": "../contracts/baskets/hood6.json",
+      "tickers": [
+        "CASHCAT",
+        "ARROW",
+        "HOODRAT",
+        "VIBECAT",
+        "VEX",
+        "VIRTUAL"
+      ],
+      "targetUsdPerBasket": 100,
+      "mintFeeBps": 30,
+      "maxSupplyCap": "1000000000000000000000000",
+      "initialSupplyCap": "1000000000000000000000"
+    },
+    {
+      "name": "Vimen AI Six Basket",
+      "symbol": "AI6",
+      "outputFile": "../contracts/baskets/ai6.json",
+      "tickers": [
+        "NVDA",
+        "AMD",
+        "MU",
+        "PLTR",
+        "GOOGL",
+        "SPCX"
+      ],
+      "targetUsdPerBasket": 100,
+      "mintFeeBps": 30,
+      "maxSupplyCap": "1000000000000000000000000",
+      "initialSupplyCap": "1000000000000000000000"
+    }
+  ]
+}

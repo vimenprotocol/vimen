@@ -1,0 +1,27 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 10_000
+# needed since BasketFactory: 9-arg BasketToken constructor encoding
+# exceeds legacy-codegen stack depth (NFR-1 "off unless needed" clause)
+via_ir = true
+fs_permissions = [{ access = "read", path = "./baskets" }]
+
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "forge-std/=lib/forge-std/src/",
+]
+
+[fuzz]
+runs = 1024
+
+[invariant]
+runs = 256
+depth = 64
+fail_on_revert = false
+
+[fmt]
+line_length = 120

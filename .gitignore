@@ -1,0 +1,20 @@
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/**/dry-run/
+contracts/broadcast/*/31337/
+
+# Node
+node_modules/
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Tooling artifacts
+.playwright-mcp/
+*.log
+
+# Misc
+.DS_Store
+.idea/

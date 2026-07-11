@@ -1,0 +1,17 @@
+{
+  "name": "vimen-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compute-units": "tsx computeUnits.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.52.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26",
+    "tsx": "^4.19.0",
+    "typescript": "^7"
+  }
+}
