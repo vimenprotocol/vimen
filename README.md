@@ -16,19 +16,23 @@ Stock Tokens held by its own immutable contract. Mint deposits the constituents
 in-kind; redeem burns and returns them. **No oracles in the core. No admin keys
 over funds. Redeem always works.**
 
-| Basket | Symbol | Constituents | Status |
+| Basket | Symbol | Constituents | Contract (Robinhood Chain) |
 |---|---|---|---|
-| Magnificent 7 | `MAG7` | AAPL MSFT GOOGL AMZN META NVDA TSLA | ⏳ launch set — deployment pending |
-| The Hood Six | `HOOD6` | CASHCAT ARROW HOODRAT VIBECAT VEX VIRTUAL | ⏳ launch set — deployment pending |
-| The AI Six | `AI6` | NVDA AMD MU PLTR GOOGL SPCX | ⏳ launch set — deployment pending |
+| Magnificent 7 | `MAG7` | AAPL MSFT GOOGL AMZN META NVDA TSLA | [`0xe1c1ADAD813736427B334e798fd2EbC7d2C7A9DF`](https://robinhoodchain.blockscout.com/address/0xe1c1ADAD813736427B334e798fd2EbC7d2C7A9DF) |
+| The Hood Six | `HOOD6` | CASHCAT ARROW HOODRAT VIBECAT VEX VIRTUAL | [`0x0CE04932513Fa1768B5b9444c6A21Ae0DdA005C5`](https://robinhoodchain.blockscout.com/address/0x0CE04932513Fa1768B5b9444c6A21Ae0DdA005C5) |
+| The AI Six | `AI6` | NVDA AMD MU PLTR GOOGL SPCX | [`0x8fF1d77a09A3292b34457175710Bb0C0A1C22601`](https://robinhoodchain.blockscout.com/address/0x8fF1d77a09A3292b34457175710Bb0C0A1C22601) |
+
+All three deployed 2026-07-12 with source verified on Blockscout, plus
+[`VimenZap`](https://robinhoodchain.blockscout.com/address/0x0bFE35e6C22aDB35139841c8c9BeA367bc627458)
+(`0x0bFE35e6C22aDB35139841c8c9BeA367bc627458`), the single-transaction
+Uniswap v4 mint/redeem router. Guardian and fee recipient of every basket is
+the protocol Safe
+[`0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02`](https://robinhoodchain.blockscout.com/address/0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02).
 
 Alongside the baskets ships **VimenZap** — a stateless Uniswap v4 router that
 mints or redeems a basket in a single transaction from one asset — and a
 curator platform (VIMEN staking, permissionless basket publishing) slated for
 a later phase.
-
-Contract addresses + verified source will be listed here and on the `/trust`
-page after deployment.
 
 ## How it works
 

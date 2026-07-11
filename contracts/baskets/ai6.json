@@ -18,12 +18,12 @@
     "114370675358837993"
   ],
   "mintFeeBps": 30,
-  "feeRecipient": "0x08636111985145E317588689EaF0cBf1D33dE04C",
-  "guardian": "0x08636111985145E317588689EaF0cBf1D33dE04C",
+  "feeRecipient": "0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02",
+  "guardian": "0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02",
   "maxSupplyCap": "1000000000000000000000000",
   "initialSupplyCap": "1000000000000000000000",
   "_meta": {
-    "generatedAt": "2026-07-11T23:02:35.367Z",
+    "generatedAt": "2026-07-11T23:33:20.797Z",
     "chainId": 4663,
     "targetUsdPerBasket": 100,
     "pricesUsd8": {
