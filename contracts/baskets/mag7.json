@@ -25,7 +25,7 @@
   "maxSupplyCap": "1000000000000000000000000",
   "initialSupplyCap": "1000000000000000000000",
   "_meta": {
-    "generatedAt": "2026-07-11T03:03:26.534Z",
+    "generatedAt": "2026-07-11T23:02:35.364Z",
     "chainId": 4663,
     "targetUsdPerBasket": 100,
     "pricesUsd8": {

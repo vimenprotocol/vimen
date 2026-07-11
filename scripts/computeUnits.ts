@@ -166,6 +166,18 @@ async function main() {
     if (!config.baskets.length) fail(`BASKETS filter matched nothing: ${only.join(",")}`);
     console.log(`(BASKETS filter active: ${config.baskets.map((b) => b.symbol).join(", ")})`);
   }
+  // Optional staleness override, weekend use only: stock feeds carry the
+  // Friday close but the heartbeat re-publish can lag past 24h, which would
+  // block a draft generation whose prices are identical anyway. Never use
+  // for the deploy-time run — the runbook requires fresh feeds.
+  const maxStaleHours = Number(process.env.MAX_STALE_HOURS ?? 0);
+  if (maxStaleHours > 0) {
+    if (maxStaleHours > 72) fail("MAX_STALE_HOURS above 72 makes no sense (weekend is at most 3 days)");
+    console.warn(
+      `⚠ MAX_STALE_HOURS=${maxStaleHours}: accepting feeds up to ${maxStaleHours}h old. ` +
+        "DRAFT GENERATION ONLY — regenerate with fresh feeds before broadcasting.",
+    );
+  }
   const client = createPublicClient({ chain: robinhoodChain, transport: http(rpc) });
 
   const chainId = await client.getChainId();
@@ -229,11 +241,15 @@ async function main() {
       const [, answer, , updatedAt] = roundData;
       if (answer <= 0n) fail(`${ticker}: feed answer ${answer} is not positive`);
       const age = now - updatedAt;
-      if (age > BigInt(c.heartbeatSeconds)) {
+      const maxAge = maxStaleHours > 0 ? BigInt(maxStaleHours * 3600) : BigInt(c.heartbeatSeconds);
+      if (age > maxAge) {
         fail(
           `${ticker}: feed is STALE (updated ${age}s ago, heartbeat ${c.heartbeatSeconds}s). ` +
             `Feeds update 24/5 — run during US market hours.`,
         );
+      }
+      if (maxStaleHours > 0 && age > BigInt(c.heartbeatSeconds)) {
+        console.warn(`  ⚠ ${ticker}: past heartbeat (${age}s old), accepted under MAX_STALE_HOURS`);
       }
 
       // Normalize to 1e8

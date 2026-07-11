@@ -1,0 +1,38 @@
+{
+  "name": "Vimen AI Six Basket",
+  "symbol": "AI6",
+  "tokens": [
+    "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
+    "0x86923f96303D656E4aa86D9d42D1e57ad2023fdC",
+    "0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD",
+    "0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A",
+    "0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3",
+    "0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa"
+  ],
+  "unitsPerBasket": [
+    "79293337773760248",
+    "29857333598585885",
+    "17032118009959156",
+    "131688387349276056",
+    "46721985497495701",
+    "114370675358837993"
+  ],
+  "mintFeeBps": 30,
+  "feeRecipient": "0x08636111985145E317588689EaF0cBf1D33dE04C",
+  "guardian": "0x08636111985145E317588689EaF0cBf1D33dE04C",
+  "maxSupplyCap": "1000000000000000000000000",
+  "initialSupplyCap": "1000000000000000000000",
+  "_meta": {
+    "generatedAt": "2026-07-11T23:02:35.367Z",
+    "chainId": 4663,
+    "targetUsdPerBasket": 100,
+    "pricesUsd8": {
+      "NVDA": "21019000000",
+      "AMD": "55821015000",
+      "MU": "97854340000",
+      "PLTR": "12656140000",
+      "GOOGL": "35672000000",
+      "SPCX": "14572500000"
+    }
+  }
+}
