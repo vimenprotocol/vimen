@@ -2,14 +2,14 @@
 pragma solidity 0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {VimenZap} from "../src/VimenZap.sol";
+import {VimenZap2 as VimenZap} from "../src/VimenZap2.sol";
 import {PoolKey} from "../src/interfaces/IUniswapV4.sol";
 
 /// Read-only capacity probe: quotes the live HOOD6 and AI6 baskets through
 /// the deployed router at growing sizes and prints per-leg costs, to find
 /// which pool caps each basket. Never broadcast.
 contract CapacityProbe is Script {
-    VimenZap constant ZAP = VimenZap(payable(0x0bFE35e6C22aDB35139841c8c9BeA367bc627458));
+    VimenZap constant ZAP = VimenZap(payable(0x29c6792c2c755FA6fae5f694Cce85455b246B548));
     address constant USDG = 0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168;
     address constant ETH = address(0);
 

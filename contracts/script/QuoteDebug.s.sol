@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {VimenZap} from "../src/VimenZap.sol";
+import {VimenZap2 as VimenZap} from "../src/VimenZap2.sol";
 import {PoolKey} from "../src/interfaces/IUniswapV4.sol";
 
 /// Single-constituent stub so the deployed zap can quote one leg at a time.
@@ -31,7 +31,7 @@ contract OneTokenBasket {
 /// Read-only diagnosis of MAG7 zap legs: quotes each leg alone through the
 /// LIVE VimenZap via simulation. Never broadcast.
 contract QuoteDebug is Script {
-    VimenZap constant ZAP = VimenZap(payable(0x0bFE35e6C22aDB35139841c8c9BeA367bc627458));
+    VimenZap constant ZAP = VimenZap(payable(0x29c6792c2c755FA6fae5f694Cce85455b246B548));
     address constant USDG = 0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168;
     address constant ETH = address(0);
 
@@ -99,6 +99,24 @@ contract QuoteDebug is Script {
         _quoteLeg("ai6 PLTR ", 0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, 131688387349276056, _ethRoute(0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, 10000, 200));
         _quoteLeg("ai6 GOOGL", 0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, 46721985497495701, _usdgRoute(0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, false, 10000, 200));
         _quoteLeg("ai6 SPCX ", 0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, 114370675358837993, _usdgRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, false, 3000, 60));
+        console.log("--- VIBECAT/VEX staleness check: unit cost at 0.01 vs 1 basket ---");
+        // units HOOD6: VIBECAT 6381.37/basket, VEX 2895.76/basket
+        _quoteLeg("VIBECAT 0.01bkt", 0x2355431b83B1A8E40172D099d90243D8D666b56B, 6381368446175071567047, _ethRoute(0x2355431b83B1A8E40172D099d90243D8D666b56B, 10000, 200));
+        _quoteLeg("VEX     0.01bkt", 0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, 2895755690883871509528, _usdgRoute(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, true, 10000, 200));
+        {
+            OneTokenBasket vb = new OneTokenBasket(0x2355431b83B1A8E40172D099d90243D8D666b56B, 6381368446175071567047);
+            VimenZap.Hop[][] memory vl = new VimenZap.Hop[][](1);
+            vl[0] = _ethRoute(0x2355431b83B1A8E40172D099d90243D8D666b56B, 10000, 200);
+            try ZAP.quoteZapMint(address(vb), 1e18, USDG, vl) returns (uint256 t1, uint256[] memory) {
+                console.log("VIBECAT 1bkt costo(6d) = %s (x100 vs 0.01 se lineare)", t1);
+            } catch { console.log("VIBECAT 1bkt REVERT"); }
+            OneTokenBasket vx = new OneTokenBasket(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, 2895755690883871509528);
+            VimenZap.Hop[][] memory xl = new VimenZap.Hop[][](1);
+            xl[0] = _usdgRoute(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, true, 10000, 200);
+            try ZAP.quoteZapMint(address(vx), 1e18, USDG, xl) returns (uint256 t2, uint256[] memory) {
+                console.log("VEX 1bkt costo(6d) = %s", t2);
+            } catch { console.log("VEX 1bkt REVERT"); }
+        }
         console.log("--- PLTR/SPCX candidates (0.2 basket AI6) ---");
         _quoteLeg("PLTR usdg 1%/200", 0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, 131688387349276056, _usdgRoute(0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, true, 10000, 200));
         _quoteLeg("SPCX usdg 1%/200", 0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, 114370675358837993, _usdgRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, false, 10000, 200));
