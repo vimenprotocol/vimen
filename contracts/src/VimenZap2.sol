@@ -232,6 +232,11 @@ contract VimenZap2 is IUnlockCallback, ReentrancyGuard {
         uint256[] memory required,
         Permit2Data memory permit
     ) private returns (uint256 spent) {
+        // v1 entry points cover every leg on Uniswap; only the v2 mixed-venue
+        // paths (guarded by _checkCoverage) may leave a leg empty. Reject empty
+        // legs here so the callback's mixed-venue skip can never strand a
+        // constituent on a single-venue mint.
+        _requireAllPaths(legs);
         bytes memory result = poolManager.unlock(
             abi.encode(
                 ZapData({
@@ -275,6 +280,7 @@ contract VimenZap2 is IUnlockCallback, ReentrancyGuard {
         uint256 deadline
     ) external nonReentrant returns (uint256 received) {
         if (block.timestamp > deadline) revert Expired();
+        _requireAllPaths(legs); // single-venue redeem: every leg sells on Uniswap
 
         IERC20(basket).safeTransferFrom(msg.sender, address(this), basketAmount);
         (address[] memory tokens, uint256[] memory amounts) = IBasketToken(basket).backingOf(basketAmount);
@@ -395,6 +401,12 @@ contract VimenZap2 is IUnlockCallback, ReentrancyGuard {
         (address[] memory tokens, uint256[] memory required) = IBasketToken(basket).getRequiredUnits(basketAmount);
         _checkCoverage(tokens.length, legs, rialtoCalls);
 
+        // measure the payment balance BEFORE pulling the budget, so the final
+        // refund returns exactly this tx's unspent amount even if someone has
+        // donated payment currency to the contract (no donation-driven
+        // under/overflow of `spent`, no accidental sweep of foreign residue).
+        uint256 prePay = IERC20(paymentCurrency).balanceOf(address(this));
+
         // pull the whole budget in, from allowance or via one Permit2 signature
         if (permit.signature.length > 0) {
             PERMIT2.permitTransferFrom(
@@ -441,9 +453,10 @@ contract VimenZap2 is IUnlockCallback, ReentrancyGuard {
         IBasketToken(basket).mint(basketAmount, to);
 
         // Rialto legs are exact-input: any constituent overshoot goes to the
-        // recipient, and the unspent payment budget returns to the payer.
+        // recipient, and the unspent payment budget (this tx's, measured
+        // against the pre-pull balance) returns to the payer.
         _sweepSurplus(tokens, rialtoCalls, to);
-        uint256 leftover = IERC20(paymentCurrency).balanceOf(address(this));
+        uint256 leftover = IERC20(paymentCurrency).balanceOf(address(this)) - prePay;
         if (leftover > 0) IERC20(paymentCurrency).safeTransfer(msg.sender, leftover);
         spent = maxSpend - leftover;
 
@@ -501,6 +514,16 @@ contract VimenZap2 is IUnlockCallback, ReentrancyGuard {
         received = IERC20(outputCurrency).balanceOf(address(this));
         if (received < minOut) revert MinOutNotMet(received, minOut);
         IERC20(outputCurrency).safeTransfer(to, received);
+
+        // Defence-in-depth: an exact-input Rialto router should consume the
+        // whole approved sellAmount, but if a leg leaves constituent wei
+        // behind, sweep it to the recipient rather than let it strand in the
+        // (immutable, zero-balance-invariant) contract for the next caller.
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (tokens[i] == outputCurrency) continue; // already delivered above
+            uint256 dust = IERC20(tokens[i]).balanceOf(address(this));
+            if (dust > 0) IERC20(tokens[i]).safeTransfer(to, dust);
+        }
 
         emit ZapRedeemed(msg.sender, basket, outputCurrency, basketAmount, received);
     }
@@ -607,6 +630,16 @@ contract VimenZap2 is IUnlockCallback, ReentrancyGuard {
             if (legs[i].length > 0) return true;
         }
         return false;
+    }
+
+    /// @dev Rejects any empty leg. The callback silently skips empty legs (they
+    ///      are the Rialto-covered slots of a v2 mixed-venue zap); the v1
+    ///      single-venue entry points call this first so a stray empty leg can
+    ///      never reach the callback and strand an unswapped constituent.
+    function _requireAllPaths(Hop[][] calldata legs) private pure {
+        for (uint256 i = 0; i < legs.length; i++) {
+            if (legs[i].length == 0) revert EmptyPath();
+        }
     }
 
     function _sweepSurplus(address[] memory tokens, RialtoCall[] calldata rialtoCalls, address to) private {

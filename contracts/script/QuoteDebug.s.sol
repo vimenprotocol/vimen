@@ -31,7 +31,7 @@ contract OneTokenBasket {
 /// Read-only diagnosis of MAG7 zap legs: quotes each leg alone through the
 /// LIVE VimenZap via simulation. Never broadcast.
 contract QuoteDebug is Script {
-    VimenZap constant ZAP = VimenZap(payable(0x29c6792c2c755FA6fae5f694Cce85455b246B548));
+    VimenZap constant ZAP = VimenZap(payable(0x99c8B11445f225F3696c37c05534dE69dCb612c1));
     address constant USDG = 0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168;
     address constant ETH = address(0);
 
