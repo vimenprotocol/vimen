@@ -61,8 +61,7 @@ contract QuoteDebug is Script {
     {
         r = new VimenZap.Hop[](1);
         r[0] = VimenZap.Hop({
-            key: usdgIsZero ? _key(USDG, stock, fee, ts) : _key(stock, USDG, fee, ts),
-            zeroForOne: usdgIsZero
+            key: usdgIsZero ? _key(USDG, stock, fee, ts) : _key(stock, USDG, fee, ts), zeroForOne: usdgIsZero
         });
     }
 
@@ -74,13 +73,48 @@ contract QuoteDebug is Script {
 
     function run() external {
         // MAG7 legs, units per 1e18 basket from baskets/mag7.json
-        _quoteLeg("AAPL ", 0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9, 45279601539506452, _usdgRoute(0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9, true, 500, 10));
-        _quoteLeg("MSFT ", 0xe93237C50D904957Cf27E7B1133b510C669c2e74, 37135652826208858, _usdgRoute(0xe93237C50D904957Cf27E7B1133b510C669c2e74, true, 20000, 400));
-        _quoteLeg("GOOGL", 0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, 40047416140710601, _usdgRoute(0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, false, 9000, 180));
-        _quoteLeg("AMZN ", 0x12f190a9F9d7D37a250758b26824B97CE941bF54, 58174239876475146, _ethRoute(0x12f190a9F9d7D37a250758b26824B97CE941bF54, 10000, 200));
-        _quoteLeg("META ", 0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35, 21300506923309090, _usdgRoute(0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35, true, 3000, 60));
-        _quoteLeg("NVDA ", 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 67965718091794498, _usdgRoute(0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, true, 3000, 60));
-        _quoteLeg("TSLA ", 0x322F0929c4625eD5bAd873c95208D54E1c003b2d, 35029030308868474, _usdgRoute(0x322F0929c4625eD5bAd873c95208D54E1c003b2d, false, 3000, 60));
+        _quoteLeg(
+            "AAPL ",
+            0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9,
+            45279601539506452,
+            _usdgRoute(0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9, true, 500, 10)
+        );
+        _quoteLeg(
+            "MSFT ",
+            0xe93237C50D904957Cf27E7B1133b510C669c2e74,
+            37135652826208858,
+            _usdgRoute(0xe93237C50D904957Cf27E7B1133b510C669c2e74, true, 20000, 400)
+        );
+        _quoteLeg(
+            "GOOGL",
+            0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3,
+            40047416140710601,
+            _usdgRoute(0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, false, 9000, 180)
+        );
+        _quoteLeg(
+            "AMZN ",
+            0x12f190a9F9d7D37a250758b26824B97CE941bF54,
+            58174239876475146,
+            _ethRoute(0x12f190a9F9d7D37a250758b26824B97CE941bF54, 10000, 200)
+        );
+        _quoteLeg(
+            "META ",
+            0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35,
+            21300506923309090,
+            _usdgRoute(0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35, true, 3000, 60)
+        );
+        _quoteLeg(
+            "NVDA ",
+            0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC,
+            67965718091794498,
+            _usdgRoute(0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, true, 3000, 60)
+        );
+        _quoteLeg(
+            "TSLA ",
+            0x322F0929c4625eD5bAd873c95208D54E1c003b2d,
+            35029030308868474,
+            _usdgRoute(0x322F0929c4625eD5bAd873c95208D54E1c003b2d, false, 3000, 60)
+        );
 
         address GOOGL = 0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3;
         address AMZN = 0x12f190a9F9d7D37a250758b26824B97CE941bF54;
@@ -93,34 +127,93 @@ contract QuoteDebug is Script {
         console.log("--- AMZN candidates (oracle $0.1428) ---");
         _quoteLeg("AMZN usdg 2%/400  ", AMZN, 58174239876475146, _usdgRoute(AMZN, false, 20000, 400));
         console.log("--- AI6 leg isolation (0.2 basket, ~$3.3/leg) ---");
-        _quoteLeg("ai6 NVDA ", 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 79293337773760248, _usdgRoute(0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, true, 3000, 60));
-        _quoteLeg("ai6 AMD  ", 0x86923f96303D656E4aa86D9d42D1e57ad2023fdC, 29857333598585885, _usdgRoute(0x86923f96303D656E4aa86D9d42D1e57ad2023fdC, true, 10000, 200));
-        _quoteLeg("ai6 MU   ", 0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD, 17032118009959156, _usdgRoute(0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD, true, 10000, 200));
-        _quoteLeg("ai6 PLTR ", 0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, 131688387349276056, _ethRoute(0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, 10000, 200));
-        _quoteLeg("ai6 GOOGL", 0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, 46721985497495701, _usdgRoute(0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, false, 10000, 200));
-        _quoteLeg("ai6 SPCX ", 0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, 114370675358837993, _usdgRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, false, 3000, 60));
+        _quoteLeg(
+            "ai6 NVDA ",
+            0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC,
+            79293337773760248,
+            _usdgRoute(0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, true, 3000, 60)
+        );
+        _quoteLeg(
+            "ai6 AMD  ",
+            0x86923f96303D656E4aa86D9d42D1e57ad2023fdC,
+            29857333598585885,
+            _usdgRoute(0x86923f96303D656E4aa86D9d42D1e57ad2023fdC, true, 10000, 200)
+        );
+        _quoteLeg(
+            "ai6 MU   ",
+            0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD,
+            17032118009959156,
+            _usdgRoute(0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD, true, 10000, 200)
+        );
+        _quoteLeg(
+            "ai6 PLTR ",
+            0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A,
+            131688387349276056,
+            _ethRoute(0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, 10000, 200)
+        );
+        _quoteLeg(
+            "ai6 GOOGL",
+            0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3,
+            46721985497495701,
+            _usdgRoute(0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, false, 10000, 200)
+        );
+        _quoteLeg(
+            "ai6 SPCX ",
+            0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa,
+            114370675358837993,
+            _usdgRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, false, 3000, 60)
+        );
         console.log("--- VIBECAT/VEX staleness check: unit cost at 0.01 vs 1 basket ---");
         // units HOOD6: VIBECAT 6381.37/basket, VEX 2895.76/basket
-        _quoteLeg("VIBECAT 0.01bkt", 0x2355431b83B1A8E40172D099d90243D8D666b56B, 6381368446175071567047, _ethRoute(0x2355431b83B1A8E40172D099d90243D8D666b56B, 10000, 200));
-        _quoteLeg("VEX     0.01bkt", 0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, 2895755690883871509528, _usdgRoute(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, true, 10000, 200));
+        _quoteLeg(
+            "VIBECAT 0.01bkt",
+            0x2355431b83B1A8E40172D099d90243D8D666b56B,
+            6381368446175071567047,
+            _ethRoute(0x2355431b83B1A8E40172D099d90243D8D666b56B, 10000, 200)
+        );
+        _quoteLeg(
+            "VEX     0.01bkt",
+            0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b,
+            2895755690883871509528,
+            _usdgRoute(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, true, 10000, 200)
+        );
         {
             OneTokenBasket vb = new OneTokenBasket(0x2355431b83B1A8E40172D099d90243D8D666b56B, 6381368446175071567047);
             VimenZap.Hop[][] memory vl = new VimenZap.Hop[][](1);
             vl[0] = _ethRoute(0x2355431b83B1A8E40172D099d90243D8D666b56B, 10000, 200);
             try ZAP.quoteZapMint(address(vb), 1e18, USDG, vl) returns (uint256 t1, uint256[] memory) {
                 console.log("VIBECAT 1bkt costo(6d) = %s (x100 vs 0.01 se lineare)", t1);
-            } catch { console.log("VIBECAT 1bkt REVERT"); }
+            } catch {
+                console.log("VIBECAT 1bkt REVERT");
+            }
             OneTokenBasket vx = new OneTokenBasket(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, 2895755690883871509528);
             VimenZap.Hop[][] memory xl = new VimenZap.Hop[][](1);
             xl[0] = _usdgRoute(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, true, 10000, 200);
             try ZAP.quoteZapMint(address(vx), 1e18, USDG, xl) returns (uint256 t2, uint256[] memory) {
                 console.log("VEX 1bkt costo(6d) = %s", t2);
-            } catch { console.log("VEX 1bkt REVERT"); }
+            } catch {
+                console.log("VEX 1bkt REVERT");
+            }
         }
         console.log("--- PLTR/SPCX candidates (0.2 basket AI6) ---");
-        _quoteLeg("PLTR usdg 1%/200", 0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, 131688387349276056, _usdgRoute(0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, true, 10000, 200));
-        _quoteLeg("SPCX usdg 1%/200", 0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, 114370675358837993, _usdgRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, false, 10000, 200));
-        _quoteLeg("SPCX eth  1%/200", 0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, 114370675358837993, _ethRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, 10000, 200));
+        _quoteLeg(
+            "PLTR usdg 1%/200",
+            0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A,
+            131688387349276056,
+            _usdgRoute(0x894E1EC2D74FFE5AEF8Dc8A9e84686acCB964F2A, true, 10000, 200)
+        );
+        _quoteLeg(
+            "SPCX usdg 1%/200",
+            0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa,
+            114370675358837993,
+            _usdgRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, false, 10000, 200)
+        );
+        _quoteLeg(
+            "SPCX eth  1%/200",
+            0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa,
+            114370675358837993,
+            _ethRoute(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, 10000, 200)
+        );
         console.log("--- MAG7 capacity probe (real basket, sizes in baskets) ---");
         {
             address MAG7 = 0xe1c1ADAD813736427B334e798fd2EbC7d2C7A9DF;
@@ -150,6 +243,8 @@ contract QuoteDebug is Script {
         hl[0] = _ethRoute(HOODRAT, 10000, 200);
         try ZAP.quoteZapMint(address(hb), 1e17, USDG, hl) returns (uint256 t, uint256[] memory) {
             console.log("HOODRAT 0.1 basket: OK, cost USDG(6d) =", t);
-        } catch { console.log("HOODRAT 0.1 basket: REVERT"); }
+        } catch {
+            console.log("HOODRAT 0.1 basket: REVERT");
+        }
     }
 }

@@ -17,9 +17,15 @@ contract CapacityProbe is Script {
         return PoolKey({currency0: c0, currency1: c1, fee: fee, tickSpacing: ts, hooks: address(0)});
     }
 
-    function _usdg(address stock, bool usdgIsZero, uint24 fee, int24 ts) internal pure returns (VimenZap.Hop[] memory r) {
+    function _usdg(address stock, bool usdgIsZero, uint24 fee, int24 ts)
+        internal
+        pure
+        returns (VimenZap.Hop[] memory r)
+    {
         r = new VimenZap.Hop[](1);
-        r[0] = VimenZap.Hop({key: usdgIsZero ? _key(USDG, stock, fee, ts) : _key(stock, USDG, fee, ts), zeroForOne: usdgIsZero});
+        r[0] = VimenZap.Hop({
+            key: usdgIsZero ? _key(USDG, stock, fee, ts) : _key(stock, USDG, fee, ts), zeroForOne: usdgIsZero
+        });
     }
 
     function _eth(address stock, uint24 fee, int24 ts) internal pure returns (VimenZap.Hop[] memory r) {
@@ -54,7 +60,12 @@ contract CapacityProbe is Script {
             l[4] = _usdg(0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b, true, 10000, 200); // VEX
             l[5] = _usdg(0xc6911796042b15d7Fa4F6CDe69e245DdCd3d9c31, true, 3000, 60); // VIRTUAL
             string[] memory n = new string[](6);
-            n[0] = "CASHCAT"; n[1] = "ARROW"; n[2] = "HOODRAT"; n[3] = "VIBECAT"; n[4] = "VEX"; n[5] = "VIRTUAL";
+            n[0] = "CASHCAT";
+            n[1] = "ARROW";
+            n[2] = "HOODRAT";
+            n[3] = "VIBECAT";
+            n[4] = "VEX";
+            n[5] = "VIRTUAL";
             _probe("HOOD6", 0x0CE04932513Fa1768B5b9444c6A21Ae0DdA005C5, l, n);
         }
         // AI6
@@ -67,7 +78,12 @@ contract CapacityProbe is Script {
             l[4] = _usdg(0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3, false, 10000, 200); // GOOGL
             l[5] = _usdg(0x4a0E65A3EcceC6dBe60AE065F2e7bb85Fae35eEa, false, 10000, 200); // SPCX
             string[] memory n = new string[](6);
-            n[0] = "NVDA"; n[1] = "AMD"; n[2] = "MU"; n[3] = "PLTR"; n[4] = "GOOGL"; n[5] = "SPCX";
+            n[0] = "NVDA";
+            n[1] = "AMD";
+            n[2] = "MU";
+            n[3] = "PLTR";
+            n[4] = "GOOGL";
+            n[5] = "SPCX";
             _probe("AI6", 0x8fF1d77a09A3292b34457175710Bb0C0A1C22601, l, n);
         }
     }
