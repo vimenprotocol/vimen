@@ -23,8 +23,8 @@ over funds. Redeem always works.**
 | The AI Six | `AI6` | NVDA AMD MU PLTR GOOGL SPCX | [`0x8fF1d77a09A3292b34457175710Bb0C0A1C22601`](https://robinhoodchain.blockscout.com/address/0x8fF1d77a09A3292b34457175710Bb0C0A1C22601) |
 
 All three deployed 2026-07-12 with source verified on Blockscout, plus
-[`VimenZap2`](https://robinhoodchain.blockscout.com/address/0x99c8B11445f225F3696c37c05534dE69dCb612c1)
-(`0x99c8B11445f225F3696c37c05534dE69dCb612c1`), the single-transaction
+[`VimenZap2`](https://robinhoodchain.blockscout.com/address/0x7cE8cC58746cf16d415B6244FC178A67f3ABc776)
+(`0x7cE8cC58746cf16d415B6244FC178A67f3ABc776`), the single-transaction
 mint/redeem router over Uniswap v4 and Rialto (supersedes
 [`v1`](https://robinhoodchain.blockscout.com/address/0x0bFE35e6C22aDB35139841c8c9BeA367bc627458), which
 remains live and functional). Guardian and fee recipient of every basket is
