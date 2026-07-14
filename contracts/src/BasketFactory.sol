@@ -6,13 +6,17 @@ import {CuratorRegistry} from "./CuratorRegistry.sol";
 import {FeeSplitter} from "./FeeSplitter.sol";
 
 /// @title BasketFactory — anyone can publish an index
-/// @notice The factory of the curation platform: any address whose VIMEN
-///         self-stake meets the license threshold can deploy a basket. The
-///         factory wires every basket the same trust-minimized way:
-///         - feeRecipient = the FeeSplitter (60% curator pool / 40% treasury,
+/// @notice The factory of the curation platform: any address holding a
+///         curation license (earned by burning VIM, see CuratorRegistry) can
+///         deploy a basket. The factory wires every basket the same
+///         trust-minimized way:
+///         - feeRecipient = the FeeSplitter (60% to the curator / 40% treasury,
 ///           constants — the curator can never redirect fees);
-///         - guardian    = the protocol guardian Safe (cap roadmap applies
-///           to curated baskets exactly like first-party ones).
+///         - guardian    = the CuratorGuardian, a restricted guardian that can
+///           only advance the supply cap upward and has NO power to redirect
+///           fees or pause minting. So on a curated basket the fee stream to
+///           the curator can never be diverted or choked by anyone, including
+///           the protocol — only the cap roadmap applies.
 ///         Baskets themselves stay immutable BasketToken instances — the
 ///         factory adds no power over them after deployment.
 contract BasketFactory {
@@ -31,22 +35,22 @@ contract BasketFactory {
 
     CuratorRegistry public immutable registry;
     FeeSplitter public immutable splitter;
-    address public immutable protocolGuardian;
+    address public immutable basketGuardian;
 
     address[] private _baskets;
     mapping(address basket => address curator) public curatorOf;
 
-    constructor(CuratorRegistry registry_, FeeSplitter splitter_, address protocolGuardian_) {
-        if (address(registry_) == address(0) || address(splitter_) == address(0) || protocolGuardian_ == address(0)) {
+    constructor(CuratorRegistry registry_, FeeSplitter splitter_, address basketGuardian_) {
+        if (address(registry_) == address(0) || address(splitter_) == address(0) || basketGuardian_ == address(0)) {
             revert ZeroAddress();
         }
         registry = registry_;
         splitter = splitter_;
-        protocolGuardian = protocolGuardian_;
+        basketGuardian = basketGuardian_;
     }
 
-    /// @notice Publish a basket. Requires an active curation license
-    ///         (VIMEN self-stake >= registry.MIN_SELF_STAKE()).
+    /// @notice Publish a basket. Requires a curation license
+    ///         (earned by burning VIM, `registry.isLicensed(msg.sender)`).
     function createBasket(
         string calldata name,
         string calldata symbol,
@@ -66,7 +70,7 @@ contract BasketFactory {
                 unitsPerBasket,
                 mintFeeBps,
                 address(splitter),
-                protocolGuardian,
+                basketGuardian,
                 CEILING,
                 initialSupplyCap
             )

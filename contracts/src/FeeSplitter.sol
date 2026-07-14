@@ -4,13 +4,14 @@ pragma solidity 0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {CuratorRegistry} from "./CuratorRegistry.sol";
 
 /// @title FeeSplitter — routes basket mint fees 60/40
-/// @notice The `feeRecipient` of every factory-created basket. Fees arrive
-///         as basket tokens; anyone can call `distribute` to push 60% to the
-///         curator's staking pool (via the registry) and 40% to the protocol
-///         treasury. Splits are constants — no admin can change them.
+/// @notice The `feeRecipient` of every factory-created basket. Fees arrive as
+///         basket tokens; anyone can call `distribute` to push 60% straight to
+///         the basket's curator and 40% to the protocol treasury. Splits are
+///         constants — no admin can change them. With the burn-for-license
+///         model there is no staking pool: the curator's share is paid
+///         directly to their wallet, in full.
 contract FeeSplitter is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -25,16 +26,14 @@ contract FeeSplitter is ReentrancyGuard {
 
     uint256 public constant CURATOR_SHARE_BPS = 6_000; // 60%, forever
 
-    CuratorRegistry public immutable registry;
     address public immutable treasury;
     address private immutable deployer;
     address public factory; // set once at deployment wiring, then frozen
 
     mapping(address basket => address curator) public curatorOf;
 
-    constructor(CuratorRegistry registry_, address treasury_) {
-        if (address(registry_) == address(0) || treasury_ == address(0)) revert ZeroAddress();
-        registry = registry_;
+    constructor(address treasury_) {
+        if (treasury_ == address(0)) revert ZeroAddress();
         treasury = treasury_;
         deployer = msg.sender;
     }
@@ -65,13 +64,8 @@ contract FeeSplitter is ReentrancyGuard {
         uint256 toCurator = (balance * CURATOR_SHARE_BPS) / 10_000;
         uint256 toTreasury = balance - toCurator;
 
-        if (toCurator > 0) {
-            IERC20(basket).safeTransfer(address(registry), toCurator);
-            registry.notifyReward(curator, basket, toCurator);
-        }
-        if (toTreasury > 0) {
-            IERC20(basket).safeTransfer(treasury, toTreasury);
-        }
+        if (toCurator > 0) IERC20(basket).safeTransfer(curator, toCurator);
+        if (toTreasury > 0) IERC20(basket).safeTransfer(treasury, toTreasury);
         emit Distributed(basket, curator, toCurator, toTreasury);
     }
 }

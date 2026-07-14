@@ -2,51 +2,52 @@
 pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {VimenToken} from "../src/VimenToken.sol";
-import {CuratorRegistry} from "../src/CuratorRegistry.sol";
+import {VimenToken} from "./mocks/VimenToken.sol";
+import {CuratorRegistry, IVimBurnable} from "../src/CuratorRegistry.sol";
 import {FeeSplitter} from "../src/FeeSplitter.sol";
 import {BasketFactory} from "../src/BasketFactory.sol";
+import {CuratorGuardian, IBasketCap} from "../src/CuratorGuardian.sol";
 import {BasketToken} from "../src/BasketToken.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockAgentToken} from "./mocks/MockAgentToken.sol";
 
+/// Burn-for-license curation platform: burn 25k VIM -> permanent license ->
+/// publish baskets -> 60% of every mint fee goes straight to the curator.
 contract PlatformTest is Test {
-    VimenToken vimen;
+    VimenToken vim;
     CuratorRegistry registry;
     FeeSplitter splitter;
+    CuratorGuardian curatorGuardian;
     BasketFactory factory;
 
     address treasury = makeAddr("treasury");
-    address protocolGuardian = makeAddr("protocolGuardian");
+    address protocolSafe = makeAddr("protocolSafe"); // the CuratorGuardian admin
     address curator = makeAddr("curator");
-    address delegator = makeAddr("delegator");
     address minter = makeAddr("minter");
 
     MockERC20 tokenA;
     MockERC20 tokenB;
 
     uint256 constant LICENSE = 25_000e18;
-    // accPerShare floors once per pool: max dust = poolStake / 1e18 wei
-    uint256 constant DUST = (LICENSE + 40_000e18) / 1e18 + 2;
 
     function setUp() public {
-        vimen = new VimenToken(address(this));
-        registry = new CuratorRegistry(vimen);
-        splitter = new FeeSplitter(registry, treasury);
-        factory = new BasketFactory(registry, splitter, protocolGuardian);
-        registry.initSplitter(address(splitter));
+        vim = new VimenToken(address(this));
+        registry = new CuratorRegistry(IVimBurnable(address(vim)));
+        splitter = new FeeSplitter(treasury);
+        curatorGuardian = new CuratorGuardian(protocolSafe);
+        factory = new BasketFactory(registry, splitter, address(curatorGuardian));
         splitter.initFactory(address(factory));
 
-        vimen.transfer(curator, 100_000e18);
-        vimen.transfer(delegator, 100_000e18);
+        vim.transfer(curator, 100_000e18);
 
         tokenA = new MockERC20("Token A", "A");
         tokenB = new MockERC20("Token B", "B");
     }
 
-    function _license(address who, uint256 amount) internal {
+    function _license(address who) internal {
         vm.startPrank(who);
-        vimen.approve(address(registry), type(uint256).max);
-        registry.stake(who, amount);
+        vim.approve(address(registry), LICENSE);
+        registry.burnForLicense();
         vm.stopPrank();
     }
 
@@ -72,13 +73,14 @@ contract PlatformTest is Test {
         vm.stopPrank();
     }
 
-    // ------------------------------------------------------------ VimenToken
+    // ------------------------------------------------------------ VIM token
 
-    function test_token_fixedSupplyToDistributor() public {
+    function test_token_fixedSupplyAndSymbol() public {
         VimenToken t = new VimenToken(treasury);
         assertEq(t.totalSupply(), 100_000_000e18);
         assertEq(t.balanceOf(treasury), 100_000_000e18);
-        assertEq(t.symbol(), "VIMEN");
+        assertEq(t.symbol(), "VIM");
+        assertEq(t.name(), "Vimen");
     }
 
     function test_token_revert_zeroDistributor() public {
@@ -86,323 +88,257 @@ contract PlatformTest is Test {
         new VimenToken(address(0));
     }
 
-    // ---------------------------------------------------------- license/stake
+    function test_token_isBurnable() public {
+        uint256 supplyBefore = vim.totalSupply();
+        vm.prank(curator);
+        vim.burn(1_000e18);
+        assertEq(vim.totalSupply(), supplyBefore - 1_000e18);
+    }
 
-    function test_license_thresholdExact() public {
-        _license(curator, LICENSE - 1);
+    // ---------------------------------------------------------- burn license
+
+    function test_burnForLicense_burnsAndLicenses() public {
+        uint256 supplyBefore = vim.totalSupply();
+        uint256 curatorBefore = vim.balanceOf(curator);
         assertFalse(registry.isLicensed(curator));
-        vm.prank(curator);
-        registry.stake(curator, 1);
-        assertTrue(registry.isLicensed(curator));
-    }
 
-    function test_delegation_ranking() public {
-        _license(curator, LICENSE);
-        vm.startPrank(delegator);
-        vimen.approve(address(registry), type(uint256).max);
-        registry.stake(curator, 40_000e18);
-        vm.stopPrank();
-        assertEq(registry.effectiveStake(curator), LICENSE + 40_000e18);
-        assertFalse(registry.isLicensed(delegator));
-        // delegation alone never licenses the curator
-        assertEq(registry.stakeOf(curator, curator), LICENSE);
-    }
-
-    function test_unstake_cooldown() public {
-        _license(curator, LICENSE);
-        vm.prank(curator);
-        registry.requestUnstake(curator, LICENSE);
-        assertFalse(registry.isLicensed(curator));
-        assertEq(registry.effectiveStake(curator), 0);
-
-        vm.expectRevert(CuratorRegistry.CooldownActive.selector);
-        vm.prank(curator);
-        registry.withdraw();
-
-        vm.warp(block.timestamp + 7 days);
-        uint256 before = vimen.balanceOf(curator);
-        vm.prank(curator);
-        registry.withdraw();
-        assertEq(vimen.balanceOf(curator) - before, LICENSE);
-    }
-
-    function test_unstake_revert_insufficient() public {
-        _license(curator, LICENSE);
-        vm.expectRevert(CuratorRegistry.InsufficientStake.selector);
-        vm.prank(curator);
-        registry.requestUnstake(curator, LICENSE + 1);
-    }
-
-    function test_commission_defaultAndBounds() public {
-        assertEq(registry.commissionBps(curator), 2_000);
-        vm.expectEmit(true, false, false, true);
-        emit CuratorRegistry.CommissionAnnounced(curator, 0, block.timestamp + 7 days);
-        vm.prank(curator);
-        registry.setCommission(0);
-        // announcement only: nothing changes until the timelock elapses
-        assertEq(registry.commissionBps(curator), 2_000);
-        (uint16 pendingBps, uint64 effectiveAt) = registry.pendingCommission(curator);
-        assertEq(pendingBps, 0);
-        assertEq(effectiveAt, block.timestamp + registry.COMMISSION_TIMELOCK());
-        vm.warp(effectiveAt);
-        assertEq(registry.commissionBps(curator), 0);
-        vm.expectRevert(CuratorRegistry.CommissionTooHigh.selector);
-        vm.prank(curator);
-        registry.setCommission(5_001);
-    }
-
-    function test_commission_timelock_feeFlowUsesOldRateInWindow() public {
-        _license(curator, LICENSE);
-        vm.prank(curator);
-        registry.setCommission(5_000);
-
-        // fees distributed inside the window still pay the old 20%
-        tokenA.mint(address(registry), 100e18);
-        vm.prank(address(splitter));
-        registry.notifyReward(curator, address(tokenA), 100e18);
-        (, uint256[] memory pending) = registry.pendingRewards(curator, curator);
-        assertEq(pending[0], 100e18); // sole staker: 20% commission + 80% pro-rata
-
-        // after the timelock the announced 50% applies, without another call
-        vm.warp(block.timestamp + registry.COMMISSION_TIMELOCK());
-        assertEq(registry.commissionBps(curator), 5_000);
-    }
-
-    function test_commission_reannounceRestartsClock() public {
-        // literal base time: via-IR rematerializes `block.timestamp` reads at
-        // their use sites, so a t0 captured from it goes stale across vm.warp
-        uint256 t0 = 1_000_000;
-        vm.warp(t0);
         vm.startPrank(curator);
-        registry.setCommission(5_000);
-        // replacing the announcement before it matures restarts the clock
-        vm.warp(t0 + 6 days);
-        registry.setCommission(4_000);
-        vm.warp(t0 + 7 days); // first announcement would be live now
-        assertEq(registry.commissionBps(curator), 2_000);
-        vm.warp(t0 + 13 days);
-        assertEq(registry.commissionBps(curator), 4_000);
-
-        // a matured announcement is folded into storage (CommissionSet) and
-        // survives being replaced by a new pending one
+        vim.approve(address(registry), LICENSE);
         vm.expectEmit(true, false, false, true);
-        emit CuratorRegistry.CommissionSet(curator, 4_000);
-        registry.setCommission(1_000);
-        assertEq(registry.commissionBps(curator), 4_000);
+        emit CuratorRegistry.LicenseBurned(curator, LICENSE);
+        registry.burnForLicense();
+        vm.stopPrank();
+
+        assertTrue(registry.isLicensed(curator));
+        // VIM is truly burned: supply and the curator's balance both drop
+        assertEq(vim.totalSupply(), supplyBefore - LICENSE);
+        assertEq(vim.balanceOf(curator), curatorBefore - LICENSE);
+        // registry never holds the token
+        assertEq(vim.balanceOf(address(registry)), 0);
+    }
+
+    function test_burnForLicense_alreadyLicensed_reverts() public {
+        _license(curator);
+        vm.startPrank(curator);
+        vim.approve(address(registry), LICENSE);
+        vm.expectRevert(CuratorRegistry.AlreadyLicensed.selector);
+        registry.burnForLicense();
         vm.stopPrank();
     }
 
-    function testFuzz_commission_window(uint16 newBps, uint256 elapsed) public {
-        newBps = uint16(bound(newBps, 0, registry.MAX_COMMISSION_BPS()));
-        elapsed = bound(elapsed, 0, 30 days);
-        uint256 announcedAt = block.timestamp;
+    function test_burnForLicense_noApproval_reverts() public {
         vm.prank(curator);
-        registry.setCommission(newBps);
-        vm.warp(announcedAt + elapsed);
-        if (elapsed < registry.COMMISSION_TIMELOCK()) {
-            assertEq(registry.commissionBps(curator), 2_000);
-        } else {
-            assertEq(registry.commissionBps(curator), newBps);
-        }
+        vm.expectRevert(); // ERC20 insufficient allowance
+        registry.burnForLicense();
+        assertFalse(registry.isLicensed(curator));
     }
 
-    function test_wiring_oneShotInits() public {
-        CuratorRegistry r2 = new CuratorRegistry(vimen);
-        vm.expectRevert(CuratorRegistry.NotDeployer.selector);
-        vm.prank(curator);
-        r2.initSplitter(address(1));
-        r2.initSplitter(address(1));
-        vm.expectRevert(CuratorRegistry.AlreadyInitialized.selector);
-        r2.initSplitter(address(2));
+    function test_burnForLicense_insufficientBalance_reverts() public {
+        address broke = makeAddr("broke");
+        vim.transfer(broke, LICENSE - 1);
+        vm.startPrank(broke);
+        vim.approve(address(registry), LICENSE);
+        vm.expectRevert(); // ERC20 insufficient balance
+        registry.burnForLicense();
+        vm.stopPrank();
+        assertFalse(registry.isLicensed(broke));
     }
 
-    function test_notifyReward_onlySplitter() public {
-        vm.expectRevert(CuratorRegistry.NotSplitter.selector);
-        registry.notifyReward(curator, address(tokenA), 1e18);
+    function test_registry_revert_zeroToken() public {
+        vm.expectRevert(CuratorRegistry.ZeroAddress.selector);
+        new CuratorRegistry(IVimBurnable(address(0)));
     }
 
-    // -------------------------------------------------------------- factory
+    function test_licenseBurn_isFixedConstant() public view {
+        assertEq(registry.LICENSE_BURN(), LICENSE);
+    }
 
-    function test_createBasket_requiresLicense() public {
+    /// Verify against the REAL token's semantics (Virtuals AgentTokenV4): a 1%
+    /// transfer tax and a blacklist, but burns are exempt from both.
+    function test_burnForLicense_againstRealTokenSemantics() public {
+        MockAgentToken vimReal = new MockAgentToken(curator, 1_000_000_000e18);
+        CuratorRegistry reg = new CuratorRegistry(IVimBurnable(address(vimReal)));
+
+        // even a BLACKLISTED curator can still burn for a license
+        vimReal.setBlacklist(curator, true);
+
+        uint256 supplyBefore = vimReal.totalSupply();
+        uint256 balBefore = vimReal.balanceOf(curator);
+        vm.startPrank(curator);
+        vimReal.approve(address(reg), LICENSE);
+        reg.burnForLicense();
+        vm.stopPrank();
+
+        assertTrue(reg.isLicensed(curator));
+        // exactly LICENSE burned — the 1% tax never touches a burn
+        assertEq(vimReal.totalSupply(), supplyBefore - LICENSE);
+        assertEq(vimReal.balanceOf(curator), balBefore - LICENSE);
+        assertEq(vimReal.balanceOf(vimReal.TAX_RECIPIENT()), 0);
+    }
+
+    // --------------------------------------------------------- factory gating
+
+    function test_factory_unlicensed_cannotPublish() public {
         address[] memory tokens = new address[](2);
         tokens[0] = address(tokenA);
         tokens[1] = address(tokenB);
         uint256[] memory units = new uint256[](2);
         units[0] = 1e18;
-        units[1] = 1e18;
+        units[1] = 5e17;
+        vm.prank(curator); // not licensed yet
         vm.expectRevert(BasketFactory.NotLicensed.selector);
-        vm.prank(curator);
-        factory.createBasket("X", "X", tokens, units, 30, 100e18);
+        factory.createBasket("Chip War", "CHIPW", tokens, units, 30, 1_000e18);
     }
 
-    function test_createBasket_capLimit() public {
-        _license(curator, LICENSE);
-        address[] memory tokens = new address[](2);
-        tokens[0] = address(tokenA);
-        tokens[1] = address(tokenB);
-        uint256[] memory units = new uint256[](2);
-        units[0] = 1e18;
-        units[1] = 1e18;
-        uint256 tooHigh = factory.STARTER_CAP() + 1;
-        vm.expectRevert(BasketFactory.CapAboveFactoryLimit.selector);
-        vm.prank(curator);
-        factory.createBasket("X", "X", tokens, units, 30, tooHigh);
-    }
-
-    function test_createBasket_wiring() public {
-        _license(curator, LICENSE);
+    function test_factory_licensed_publishes_wiredCorrectly() public {
+        _license(curator);
         BasketToken basket = _createBasket();
 
         assertEq(basket.feeRecipient(), address(splitter));
-        assertEq(basket.guardian(), protocolGuardian);
-        assertEq(basket.maxSupplyCap(), factory.CEILING());
+        assertEq(basket.guardian(), address(curatorGuardian));
         assertEq(basket.supplyCap(), 1_000e18);
         assertEq(splitter.curatorOf(address(basket)), curator);
         assertEq(factory.curatorOf(address(basket)), curator);
         assertEq(factory.basketCount(), 1);
-        assertEq(factory.allBaskets()[0], address(basket));
     }
 
-    function test_curatedBasket_guardianIsProtocol() public {
-        _license(curator, LICENSE);
-        BasketToken basket = _createBasket();
-        // curator has no guardian powers on their own basket
-        vm.expectRevert(BasketToken.NotGuardian.selector);
+    function test_factory_capAboveStarter_reverts() public {
+        _license(curator);
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(tokenA);
+        tokens[1] = address(tokenB);
+        uint256[] memory units = new uint256[](2);
+        units[0] = 1e18;
+        units[1] = 5e17;
         vm.prank(curator);
-        basket.setMintPaused(true);
-        // protocol guardian does
-        vm.prank(protocolGuardian);
-        basket.setMintPaused(true);
-        assertTrue(basket.mintPaused());
+        vm.expectRevert(BasketFactory.CapAboveFactoryLimit.selector);
+        factory.createBasket("Chip War", "CHIPW", tokens, units, 30, 2_000e18);
     }
 
-    // ------------------------------------------------------------- splitter
+    // --------------------------------------------------- fee flow (60/40)
 
-    function test_distribute_revert_unknownBasket() public {
+    function test_feeFlow_sixtyToCuratorFortyToTreasury() public {
+        _license(curator);
+        BasketToken basket = _createBasket();
+        _mint(basket, minter, 100e18); // 0.30% fee = 0.3 basket to the splitter
+
+        uint256 fee = basket.balanceOf(address(splitter));
+        assertGt(fee, 0);
+
+        splitter.distribute(address(basket));
+
+        uint256 toCurator = (fee * 6_000) / 10_000;
+        assertEq(basket.balanceOf(curator), toCurator);
+        assertEq(basket.balanceOf(treasury), fee - toCurator);
+        assertEq(basket.balanceOf(address(splitter)), 0);
+    }
+
+    function test_distribute_unknownBasket_reverts() public {
         vm.expectRevert(FeeSplitter.UnknownBasket.selector);
-        splitter.distribute(address(tokenA));
+        splitter.distribute(address(0xBEEF));
     }
 
-    function test_register_onlyFactory() public {
+    function test_distribute_emptyBalance_noop() public {
+        _license(curator);
+        BasketToken basket = _createBasket();
+        splitter.distribute(address(basket)); // no fees yet: returns cleanly
+        assertEq(basket.balanceOf(curator), 0);
+    }
+
+    function test_splitter_register_onlyFactory() public {
         vm.expectRevert(FeeSplitter.NotFactory.selector);
-        splitter.register(address(tokenA), curator);
+        splitter.register(address(0xBEEF), curator);
     }
 
-    // ---------------------------------------------------------- end-to-end
+    function test_splitter_initFactory_onceOnly() public {
+        vm.expectRevert(FeeSplitter.AlreadyInitialized.selector);
+        splitter.initFactory(address(0xBEEF));
+    }
 
-    function test_endToEnd_feeFlow() public {
-        // curator licenses and publishes; delegator joins the pool 1:4
-        _license(curator, LICENSE); // 25k self
-        vm.startPrank(delegator);
-        vimen.approve(address(registry), type(uint256).max);
-        registry.stake(curator, 40_000e18); // pool: 65k total
+    // ----------------------------------------------- restricted guardian
+
+    function test_guardian_revert_zeroAdmin() public {
+        vm.expectRevert(CuratorGuardian.ZeroAddress.selector);
+        new CuratorGuardian(address(0));
+    }
+
+    function test_guardian_adminIsSafe() public view {
+        assertEq(curatorGuardian.admin(), protocolSafe);
+    }
+
+    function test_guardian_raiseCap_byAdmin() public {
+        _license(curator);
+        BasketToken basket = _createBasket();
+        vm.prank(protocolSafe);
+        curatorGuardian.raiseCap(IBasketCap(address(basket)), 5_000e18);
+        assertEq(basket.supplyCap(), 5_000e18);
+    }
+
+    function test_guardian_raiseCap_notAdmin_reverts() public {
+        _license(curator);
+        BasketToken basket = _createBasket();
+        vm.prank(curator);
+        vm.expectRevert(CuratorGuardian.NotAdmin.selector);
+        curatorGuardian.raiseCap(IBasketCap(address(basket)), 5_000e18);
+    }
+
+    function test_guardian_raiseCap_notIncreasing_reverts() public {
+        _license(curator);
+        BasketToken basket = _createBasket(); // cap 1_000e18
+        vm.startPrank(protocolSafe);
+        vm.expectRevert(CuratorGuardian.CapNotIncreasing.selector);
+        curatorGuardian.raiseCap(IBasketCap(address(basket)), 1_000e18); // equal
+        vm.expectRevert(CuratorGuardian.CapNotIncreasing.selector);
+        curatorGuardian.raiseCap(IBasketCap(address(basket)), 500e18); // lower
         vm.stopPrank();
+        assertEq(basket.supplyCap(), 1_000e18);
+    }
 
+    function test_guardian_raiseCap_aboveCeiling_reverts() public {
+        _license(curator);
+        BasketToken basket = _createBasket();
+        vm.prank(protocolSafe);
+        vm.expectRevert(BasketToken.CapExceedsMax.selector);
+        curatorGuardian.raiseCap(IBasketCap(address(basket)), 2_000_000e18); // > CEILING (1M)
+    }
+
+    /// The heart of the "non-revocable, un-chokeable" guarantee: because the
+    /// curated basket's guardian is the CuratorGuardian contract (which has no
+    /// setFeeRecipient / setMintPaused path), NO caller — not even the protocol
+    /// Safe — can redirect fees or pause minting on a curated basket.
+    function test_guardian_cannotRedirectOrPauseFees() public {
+        _license(curator);
         BasketToken basket = _createBasket();
 
-        // a user mints 1000 baskets → fee = 0.30% = 3e18 basket tokens
-        _mint(basket, minter, 1_000e18);
-        uint256 fee = (1_000e18 * 30) / 10_000;
-        assertEq(basket.balanceOf(address(splitter)), fee);
+        // the Safe is only the guardian's admin, not the basket's guardian
+        vm.startPrank(protocolSafe);
+        vm.expectRevert(BasketToken.NotGuardian.selector);
+        basket.setFeeRecipient(address(0xBEEF));
+        vm.expectRevert(BasketToken.NotGuardian.selector);
+        basket.setMintPaused(true);
+        vm.stopPrank();
 
-        uint256 toPool = _assertSplit(basket, fee);
-        _assertClaims(basket, toPool);
-        _assertRedeemable(basket);
+        // and the guardian contract exposes no such function, so the powers are
+        // permanently unreachable: fee recipient stays the splitter, mint open
+        assertEq(basket.feeRecipient(), address(splitter));
+        assertFalse(basket.mintPaused());
     }
 
-    function _assertSplit(BasketToken basket, uint256 fee) internal returns (uint256 toPool) {
-        // permissionless distribution: 60% pool / 40% treasury
-        splitter.distribute(address(basket));
-        toPool = (fee * 6_000) / 10_000;
-        assertEq(basket.balanceOf(treasury), fee - toPool);
-        assertEq(basket.balanceOf(address(registry)), toPool);
-    }
+    // ----------------------------------------------------------- end to end
 
-    function _assertClaims(BasketToken basket, uint256 toPool) internal {
-        // curator: 20% commission + 20% of the remaining pro-rata
-        uint256 commission = (toPool * 2_000) / 10_000;
-        uint256 net = toPool - commission;
-
-        (address[] memory tokens, uint256[] memory pendingCurator) = registry.pendingRewards(curator, curator);
-        assertEq(tokens[0], address(basket));
-        assertApproxEqAbs(pendingCurator[0], commission + (net * LICENSE) / (LICENSE + 40_000e18), DUST);
-
-        vm.prank(curator);
-        registry.claim(curator);
-        assertApproxEqAbs(basket.balanceOf(curator), commission + (net * LICENSE) / (LICENSE + 40_000e18), DUST);
-
-        vm.prank(delegator);
-        registry.claim(curator);
-        assertApproxEqAbs(basket.balanceOf(delegator), (net * 40_000e18) / (LICENSE + 40_000e18), DUST);
-
-        // conservation: nothing minted from thin air, dust stays in registry
-        assertLe(basket.balanceOf(curator) + basket.balanceOf(delegator), toPool);
-    }
-
-    function _assertRedeemable(BasketToken basket) internal {
-        // curator's claimed fee tokens are real backed baskets — redeemable
-        uint256 bal = basket.balanceOf(curator);
-        vm.prank(curator);
-        basket.redeem(bal, curator);
+    function test_endToEnd_burnPublishMintDistribute() public {
+        _license(curator);
+        BasketToken basket = _createBasket();
         assertTrue(basket.isFullyBacked());
-    }
 
-    function test_lateStaker_getsNothingFromPastFees() public {
-        _license(curator, LICENSE);
-        BasketToken basket = _createBasket();
-        _mint(basket, minter, 1_000e18);
+        _mint(basket, minter, 500e18);
+        assertTrue(basket.isFullyBacked());
+
+        uint256 fee = basket.balanceOf(address(splitter));
         splitter.distribute(address(basket));
 
-        // delegator arrives after the fees
-        vm.startPrank(delegator);
-        vimen.approve(address(registry), type(uint256).max);
-        registry.stake(curator, 40_000e18);
-        vm.stopPrank();
-
-        (, uint256[] memory pending) = registry.pendingRewards(curator, delegator);
-        assertEq(pending[0], 0);
-    }
-
-    function test_emptyPool_allFeesToCurator() public {
-        _license(curator, LICENSE);
-        BasketToken basket = _createBasket();
-        _mint(basket, minter, 1_000e18);
-
-        // curator exits the pool entirely before distribution
-        vm.prank(curator);
-        registry.requestUnstake(curator, LICENSE);
-
-        splitter.distribute(address(basket));
-        uint256 toPool = ((1_000e18 * 30) / 10_000) * 6_000 / 10_000;
-        (, uint256[] memory pending) = registry.pendingRewards(curator, curator);
-        assertEq(pending[0], toPool);
-    }
-
-    function testFuzz_rewardConservation(uint256 selfStake, uint256 delegated, uint256 mintAmount) public {
-        selfStake = bound(selfStake, LICENSE, 90_000e18);
-        delegated = bound(delegated, 1, 90_000e18);
-        mintAmount = bound(mintAmount, 1e18, 1_000e18);
-
-        _license(curator, selfStake);
-        vm.startPrank(delegator);
-        vimen.approve(address(registry), type(uint256).max);
-        registry.stake(curator, delegated);
-        vm.stopPrank();
-
-        BasketToken basket = _createBasket();
-        _mint(basket, minter, mintAmount);
-        splitter.distribute(address(basket));
-
-        uint256 registryBalance = basket.balanceOf(address(registry));
-        vm.prank(curator);
-        registry.claim(curator);
-        vm.prank(delegator);
-        registry.claim(curator);
-
-        uint256 claimed = basket.balanceOf(curator) + basket.balanceOf(delegator);
-        assertLe(claimed, registryBalance, "claimed more than distributed");
-        // accPerShare floors once per notification (< pool/1e18 wei) and each
-        // staker's settlement floors once more — that is the whole dust budget.
-        assertLe(registryBalance - claimed, (selfStake + delegated) / 1e18 + 2, "dust above rounding bound");
+        // curator earns 60% of the fee directly, in one hop, no staking
+        assertEq(basket.balanceOf(curator), (fee * 6_000) / 10_000);
+        assertTrue(basket.isFullyBacked());
     }
 }

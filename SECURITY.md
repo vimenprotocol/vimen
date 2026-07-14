@@ -30,40 +30,79 @@ as possible and to be explicit about the risks that remain.
 3. **Weight drift.** Units are fixed at deploy; weights drift with prices.
    This is documented product behavior, not a vulnerability.
 
-## Platform contracts (WP-5: VIMEN + curation)
+## Platform contracts (WP-5: VIM + curation)
 
-The curation platform wraps the unchanged `BasketToken` core:
+The curation platform wraps the unchanged `BasketToken` core. The curator
+license is earned by **burning** VIM — there is no staking, delegation,
+cooldown, or reward pool.
 
-- `VimenToken` — fixed 100M supply, minted once, no owner/mint/hooks.
-- `CuratorRegistry` — staking pools (license + delegation), MultiRewards-style
-  fee accounting, 7-day unstake cooldown. No admin; the splitter link is a
-  one-shot deployer-only init, frozen afterwards.
-- `FeeSplitter` — `feeRecipient` of every factory basket; 60/40 split are
-  constants. Permissionless `distribute`.
-- `BasketFactory` — permissionless creation gated on the stake license;
+**The VIM token is external and third-party.** VIM was launched on Virtuals
+Protocol — a Virtuals `AgentTokenV4` at
+[`0x43E7…47aF`](https://robinhoodchain.blockscout.com/token/0x43E7Cb9984aD95aA808ac21998cc8D5f909e47aF):
+a 1,000,000,000-supply ERC-20 whose owner controls a 1% buy/sell tax and an
+address blacklist. It is **not** any contract in `src/`: the repo's
+`VimenToken.sol` lives under `test/mocks/` and is a reference/test stand-in
+only, never deployed. The platform integrates VIM through exactly ONE
+call — `burnFrom`, in `CuratorRegistry` — and that surface is verified safe
+against the deployed token's bytecode:
+
+- The token's `burnFrom` routes to `_burn`, which **skips the blacklist**
+  (`_beforeTokenTransfer` exempts burns, `to == address(0)`) and **skips the
+  1% tax** (burns never enter the taxed `_transfer` path), and reduces
+  `totalSupply`. So the token owner can neither block nor tax a license burn.
+- The platform touches VIM nowhere else — `FeeSplitter` pays curators in
+  basket tokens, never VIM — so VIM's tax / blacklist / owner cannot reach
+  anything beyond the (safe) license burn.
+
+- `CuratorRegistry` — `burnForLicense()` burns `LICENSE_BURN`, a **fixed
+  constant of 25,000 VIM**, from the caller (via `burnFrom`) for a permanent,
+  non-revocable license. Same amount for everyone, forever — **no admin, no
+  owner, no tunable knob**. Holds no funds; `_licensed` set before the external
+  `burnFrom` (CEI); `nonReentrant`; `AlreadyLicensed` guard.
+- `FeeSplitter` — `feeRecipient` of every factory basket; the 60/40 split are
+  constants. The curator's 60% is transferred **directly to their wallet** in
+  one hop — no pool, no claim step. Permissionless `distribute`. The factory
+  link is a one-shot deployer-only `initFactory`, frozen afterwards.
+- `CuratorGuardian` — the restricted guardian of every curated basket.
+  Curated baskets are wired with THIS contract as their `guardian`, not the
+  protocol Safe directly. It exposes only `raiseCap` (advance a basket's
+  supply cap, admin-only, strictly upward, bounded by the basket's immutable
+  `maxSupplyCap`) and has NO `setFeeRecipient` / `setMintPaused` path. Its
+  `admin` (the Safe) is immutable; no owner, no upgrade, no admin transfer.
+- `BasketFactory` — permissionless creation gated on `registry.isLicensed`;
   wires every basket with `feeRecipient = splitter` and `guardian =
-  protocol Safe`, so curators can neither redirect fees nor touch caps.
+  CuratorGuardian`, so curators can neither redirect fees nor touch caps, and
+  the *protocol* can only advance caps.
 
-Trust properties: after deployment wiring there is no privileged function in
-the platform. Reward accounting rounds down; dust bound is
-`totalStake/1e18` wei per distribution plus 1 wei per staker settlement
-(fuzz-tested). A curator unstaking below the threshold only loses the ability
-to publish *new* baskets — existing baskets are immutable and unaffected.
+Trust properties: after deployment wiring the platform has exactly **one
+bounded lever** — the protocol Safe can raise a curated basket's supply cap
+(upward-only, via `CuratorGuardian`), and nothing else. The registry has no
+admin at all; the license burn is a fixed constant. Everything is immutable.
+Burning is irreversible
+and idempotent-guarded; a license can never be revoked, and existing baskets
+are immutable `BasketToken` instances unaffected by anything a curator does
+afterward. `distribute` rounds the curator's 60% down, so at most the
+remaining ≤1 wei of a distribution goes to the treasury; a 1-wei fee balance
+floors the curator share to 0 and pays the single wei to treasury (tested).
+The curator's share cannot be inflated or redirected: the 60% constant and the
+destination (`curatorOf[basket]`, set factory-only at publish) are both frozen.
 
-Commission changes are timelocked (resolved former phase-1 limitation):
-`setCommission` only *announces* a change (`CommissionAnnounced` with its
-`effectiveAt`); it activates after `COMMISSION_TIMELOCK` (7 days, aligned
-with `UNSTAKE_COOLDOWN`), so a delegator who exits at the announcement is out
-before the new rate applies. `commissionBps` reflects a matured announcement
-lazily — no keeper needed — and re-announcing before maturity restarts the
-clock. The old grief (raise to the 50% cap and call the permissionless
-`distribute` in the same transaction, capturing up to half of pending pool
-fees with no notice) is closed: fees distributed inside the window still pay
-the old rate.
+**Un-chokeable curated fee stream.** Because a curated basket's guardian is
+the `CuratorGuardian` contract — which lacks any `setFeeRecipient` /
+`setMintPaused` function — no caller, not even the protocol Safe, can redirect
+or pause a curated basket's mint fees. The Safe is only the guardian's admin
+and can do exactly one thing: raise the cap, upward, never down. This is what
+makes "burn 25,000 VIM for a non-revocable license, 60% of fees forever"
+enforceable rather than merely promised. (First-party baskets keep the Safe as
+their direct guardian; only factory-published baskets use the restricted one.)
 
-Coverage: 100% lines/statements/branches/functions across all five contracts
-(107 tests). Additional accepted Slither findings: `timestamp` comparison in
-the cooldown (standard), benign `== 0` early-return in `distribute`.
+Coverage: the burn redesign removed the staking/delegation/reward machinery
+and added the restricted `CuratorGuardian`. Platform tests: 35 (`Platform.t.sol`
++ `Platform.edge.t.sol`), including an explicit proof that neither the Safe nor
+anyone else can `setFeeRecipient`/`setMintPaused` a curated basket, and a proof
+that `burnForLicense` works against the real token's tax + blacklist (both
+exempt burns); full suite 130 tests, all green. Additional accepted Slither
+finding: benign `== 0` early-return in `distribute`.
 
 Note: `via_ir = true` is now enabled — the 9-argument `BasketToken`
 constructor call in `BasketFactory` exceeds legacy-codegen stack depth
@@ -95,16 +134,24 @@ Zero findings of any severity in `src/BasketToken.sol` other than:
   intentional XOR in the Newton–Raphson inverse). Not our code; unmodified
   audited library.
 
-### Aderyn (0.6.x, full `src/` scan — all six contracts + interfaces)
+### Aderyn (0.6.x, full `src/` scan — all contracts + interfaces)
 
-2 High, both triaged as false positives / intentional:
+3 High, all triaged as false positives / intentional:
 
-- **H-1 "state change after external call"** (BasketFactory.createBasket,
-  CuratorRegistry.stake) — the external calls are to protocol-owned contracts
-  wired at deployment (registry/splitter) or are the deliberate balance-delta
-  read pattern that rejects fee-on-transfer VIMEN; every flagged function is
-  `nonReentrant`. **Accepted.**
-- **H-2 unsafe int cast** (`IUniswapV4.sol` BalanceDelta unpacking) — the
+- **H-1 "state change after external call"** (`BasketFactory.createBasket`,
+  lines 62/78) — the external calls are to protocol-owned, trusted contracts:
+  `new BasketToken(...)` (its constructor only does `code.length` reads, no
+  callback into the caller) and `splitter.register` (factory-gated, writes a
+  mapping, no callback). No attacker-controlled reentrancy path exists, so the
+  post-call writes (`curatorOf`, `_baskets.push`, event) are safe. In the burn
+  redesign `CuratorRegistry.burnForLicense` sets `_licensed` *before* the
+  external `burnFrom` (CEI) and is `nonReentrant`, so it is not flagged.
+  **Accepted.**
+- **H-2 contract name reused** (`VimenZap`/`VimenZap2`/`VimenZap3` share the
+  `VimenZap` type name across files) — deliberate: each is an independently
+  deployed, immutable router version; only the latest is wired in the UI.
+  **Accepted.**
+- **H-3 unsafe int cast** (`IUniswapV4.sol` BalanceDelta unpacking) — the
   truncation to the low 128 bits is the defined encoding of Uniswap v4's
   `BalanceDelta` (two int128s packed in an int256); the cast is the decoder.
   **Accepted.**
