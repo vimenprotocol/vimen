@@ -19,4 +19,4 @@ trust. They rise with demonstrated volume. Governance rails:
 
 Utilization and holder counts are measured from on-chain data (Blockscout /
 Dune). The roadmap is surfaced in-app on the homepage and the trust page
-(mirrored in the app's config — keep the three in sync).
+(`frontend/src/config/roadmap.ts` — keep the three in sync).

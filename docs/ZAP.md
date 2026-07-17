@@ -57,7 +57,7 @@ first sane pool (USDG, 2% fee) appeared 2026-07-12 and completed the true
 Magnificent Seven; thin legs (MSFT, AMZN, PLTR, MU) rely on the 3% runtime
 impact gate and get healthier as pools deepen; `zapAvailable()` keeps any not-fully-routable basket honest by
 never showing the "Pay with USDG" toggle. The route map lives in
-the app's route config; extend it as pools appear. No canonical
+`frontend/src/config/zap.ts`; extend it as pools appear. No canonical
 USDC/USDT/WBTC/SOL exist on the chain: accepting those means an external
 bridge/onramp into USDG or ETH, not a contract change.
 
@@ -107,9 +107,9 @@ ships a lighter widget.
 - `contracts/test/VimenZap.fork.t.sol` — 7 fork tests against live pools
   (`RH_RPC=… forge test --match-contract VimenZapForkTest`)
 - `contracts/script/DeployZap.s.sol` — deploy (CONFIRM_DEPLOY=yes gate)
-- app route map + ABI config
+- `frontend/src/config/zap.ts`, `zapAbi.ts` — route map + ABI
 - `frontend/src/lib/useZapQuote.ts` — exact quote + per-leg impact gating
-- app "Pay with USDG" panel
+- `frontend/src/components/ZapMintPanel.tsx` — "Pay with USDG" panel
 
 ## Sharp edges to remember
 

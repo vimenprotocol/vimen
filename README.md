@@ -36,6 +36,40 @@ mints or redeems a basket in a single transaction from one asset — and a
 curator platform (VIMEN staking, permissionless basket publishing) slated for
 a later phase.
 
+## V2 — agentic baskets (platform live 2026-07-18)
+
+The second shelf: baskets whose recipe an **agent** rotates over time, inside
+a policy the contract enforces — while mint/redeem stay byte-for-byte V1.
+`BasketToken2` allows exactly one new mutation, `rebalance`, bounded by
+immutable ceilings: cooldown ≥ 1 day, turnover ≤ 25% of NAV, slippage ≤ 1% of
+NAV per rebalance, buys only from a Safe-curated asset registry (sells always
+allowed), and full backing recomputed from real balances after every trade.
+Rebalance surplus is swept to a per-basket `BasketDistributor` and pushed to
+holders in USDG. A worst-case agent key can cost at most the slippage budget
+per cooldown window — it can never touch custody, block redemption, or route
+value anywhere but the holders' distributor.
+
+Chain natives are priced through manipulation-resistant TWAP adapters
+(`PoolTwapObserver` median for v4 pools, cumulative-price windows for v2
+pairs) that answer with the same `latestRoundData` shape as Chainlink — and
+report *stale* rather than a guessable price when a window is uncovered.
+
+| Contract | Address (Robinhood Chain) |
+|---|---|
+| `BasketFactory2` | [`0x1A3e4B71c58f77a995c1a4C7D76A4296CFDDd489`](https://robinhoodchain.blockscout.com/address/0x1A3e4B71c58f77a995c1a4C7D76A4296CFDDd489) |
+| `BasketTokenDeployer` | [`0x42E65A72AF9FeB459C2ab5CDfd506EAD18014bd8`](https://robinhoodchain.blockscout.com/address/0x42E65A72AF9FeB459C2ab5CDfd506EAD18014bd8) |
+| `AssetRegistry` | [`0x53B255bff87450979c459cC91aFA47A3B93f81fb`](https://robinhoodchain.blockscout.com/address/0x53B255bff87450979c459cC91aFA47A3B93f81fb) |
+| `MakerRegistry` | [`0x4Ce4CAC5439B5aB758B8F156f93D1B8cD8E45779`](https://robinhoodchain.blockscout.com/address/0x4Ce4CAC5439B5aB758B8F156f93D1B8cD8E45779) |
+| `FeeSplitter` (V2) | [`0x659d5A6aA4017f034FBee9778B3541A2dcc17653`](https://robinhoodchain.blockscout.com/address/0x659d5A6aA4017f034FBee9778B3541A2dcc17653) |
+| `PoolTwapObserver` | [`0x4E03522f038F4d0dEA65e72a8A1eD22c06d05AAE`](https://robinhoodchain.blockscout.com/address/0x4E03522f038F4d0dEA65e72a8A1eD22c06d05AAE) |
+| `PoolMaker` | [`0x915c32c68CD501587E701Bf344791f5d90078C64`](https://robinhoodchain.blockscout.com/address/0x915c32c68CD501587E701Bf344791f5d90078C64) |
+
+Plus fifteen per-asset TWAP feeds (six v4, nine v2), all source-verified on
+Blockscout. Curation is two-tier and burn-gated: 10,000 VIM for frozen
+baskets, 25,000 VIM for agentic ones (legacy 25k burns are grandfathered).
+The first agentic baskets are opening now; docs:
+[docs.vimen.org/docs/agentic](https://docs.vimen.org/docs/agentic).
+
 ## How it works
 
 - Units are fixed **raw** ERC-20 amounts per 1e18 basket wei, computed once at
