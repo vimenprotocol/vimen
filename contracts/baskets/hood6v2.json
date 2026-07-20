@@ -1,0 +1,39 @@
+{
+  "name": "Vimen Hood Six v2 Basket",
+  "symbol": "HOOD6V2",
+  "tokens": [
+    "0x020bfC650A365f8BB26819deAAbF3E21291018b4",
+    "0x45242320DBB855EeA8Fd36804C6487E10E97FCF9",
+    "0xf2915d1e3C1B0c769d0c756Ec43F1c1f6c99cD03",
+    "0x8e62F281f282686fCa6dCB39288069a93fC23F1c",
+    "0x8Ff92566f2e81BDd68EDfAa8cde73942A723796b",
+    "0xc6911796042b15d7Fa4F6CDe69e245DdCd3d9c31"
+  ],
+  "unitsPerBasket": [
+    "230920088994754973464",
+    "773466988119547057731",
+    "9313138504003106371",
+    "5183533363812509524742",
+    "2169322567419291438508",
+    "25652711822304157667"
+  ],
+  "mintFeeBps": 30,
+  "feeRecipient": "0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02",
+  "guardian": "0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02",
+  "maxSupplyCap": "1000000000000000000000000",
+  "initialSupplyCap": "1000000000000000000000",
+  "_meta": {
+    "generatedAt": "2026-07-16T21:01:57.124Z",
+    "chainId": 4663,
+    "targetUsdPerBasket": 100,
+    "priceSource": "https://app.vimen.org/api/history",
+    "pricesUsd8": {
+      "CASHCAT": "7217504",
+      "TENDIES": "2154800",
+      "ARROW": "178958647",
+      "HOODRAT": "321531",
+      "VEX": "768289",
+      "VIRTUAL": "64970389"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "Vimen Virtuals Basket",
+  "symbol": "VIRTS",
+  "tokens": [
+    "0x3746a5ebCA295Dee695dd1bcba50A8626Df3099C",
+    "0x84b7515081A7Ac5adc26179b77A8B18A8c6725C0",
+    "0x316fb7a2a0729698D61956015705ddaFbCfa0a81",
+    "0x7541872e32Bb529d7FF11D6C59832269ce33a6FF",
+    "0x48FE62970E2b3962eD9c59f0Fce7e5a43b63eA5B",
+    "0xE44951407D2ed8E73dce4b7002908732BC0d0bC3",
+    "0x5f18b02B8320Ef1C5B7d7a5A8BAd482a767f4716",
+    "0x26C41B10527DE2Dc870fa5C9D5f4A8dBAA966cDf",
+    "0xc23d7218512c672BA6e87b7F8bccE53355f55931"
+  ],
+  "unitsPerBasket": [
+    "1638086963252139914904",
+    "6335666124967212927800",
+    "7176097852552717408854",
+    "14528506380920003138157",
+    "11302231850593536705693",
+    "38098721403099711973666",
+    "25248508441838798372986",
+    "43275992638753651411879",
+    "48820735137747704204929"
+  ],
+  "mintFeeBps": 30,
+  "feeRecipient": "0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02",
+  "guardian": "0xc7aBc67fBB12B69240A4C213c39547C8a345Ec02",
+  "maxSupplyCap": "1000000000000000000000000",
+  "initialSupplyCap": "1000000000000000000000",
+  "_meta": {
+    "generatedAt": "2026-07-16T21:03:29.972Z",
+    "chainId": 4663,
+    "targetUsdPerBasket": 100,
+    "priceSource": "https://app.vimen.org/api/history",
+    "pricesUsd8": {
+      "HAN": "678298",
+      "MLY": "175374",
+      "HYP": "154835",
+      "MONVERA": "76478",
+      "PRIZE": "98309",
+      "KINDRA": "29164",
+      "FLETCHER": "44007",
+      "PHOOD": "25675",
+      "BOWLINE": "22759"
+    }
+  }
+}

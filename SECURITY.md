@@ -101,12 +101,44 @@ and added the restricted `CuratorGuardian`. Platform tests: 35 (`Platform.t.sol`
 + `Platform.edge.t.sol`), including an explicit proof that neither the Safe nor
 anyone else can `setFeeRecipient`/`setMintPaused` a curated basket, and a proof
 that `burnForLicense` works against the real token's tax + blacklist (both
-exempt burns); full suite 130 tests, all green. Additional accepted Slither
-finding: benign `== 0` early-return in `distribute`.
+exempt burns); the full suite has since grown past 230 tests with the V2
+platform, all green. Additional accepted Slither finding: benign `== 0`
+early-return in `distribute`.
 
 Note: `via_ir = true` is now enabled — the 9-argument `BasketToken`
 constructor call in `BasketFactory` exceeds legacy-codegen stack depth
 (NFR-1's "unless needed" clause). The full suite passes under via-IR.
+
+## Agentic baskets (V2: BasketToken2 + oracle/payout layer)
+
+`BasketToken2` keeps mint/redeem byte-for-byte V1 (in-kind, price-free,
+ungated) and adds exactly one mutation: `rebalance`, callable only by the
+per-basket agent key. The security claims, each enforced in code and tested:
+
+- **Policy bounds are unbypassable constants**: cooldown ≥ 1 day, turnover
+  ≤ 25% of NAV, slippage ≤ 1% of NAV per rebalance, validated in the
+  constructor; a curator can only choose stricter values.
+- **The agent is caged**: `onlyAgent` protects only `rebalance`; no path to
+  mint, redeem, fees or custody. The only outflows are to `MakerRegistry`-
+  whitelisted settlement contracts (delta-checked to the exact amount) and
+  the sweep to the immutable per-basket `BasketDistributor`. Worst-case
+  compromised agent key ≈ the slippage budget of NAV per cooldown window.
+- **Backing survives every trade**: units are recomputed as
+  `floor(balance × 1e18 / supply)` after each rebalance, so redemption
+  never depends on the oracle being right.
+- **Oracles are fail-safe and frozen**: each registered asset's feed is
+  fixed at registration and can never be repointed; a stale feed reverts
+  the rebalance, an uncovered TWAP window reports stale rather than a
+  guessable price. No feed is ever read on mint or redeem.
+- **The distributor cannot double-pay, over-pay, or brick**: paginated
+  snapshot deduped per cycle, Σ floor ≤ pot, revert-on-transfer skips the
+  wallet instead of failing the cycle; the interval is immutable and there
+  is no owner.
+
+Before the immutable V2 deploy the layer went through two adversarial
+internal reviews; blocking findings (constructor validation, oracle
+storage-layout verification against the live PoolManager) were fixed or
+verified before deployment.
 
 ## Deviations from the handoff spec
 

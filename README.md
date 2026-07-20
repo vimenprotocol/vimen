@@ -46,10 +46,10 @@ by an immutable splitter.
 
 | Contract | Address (Robinhood Chain) |
 |---|---|
-| `CuratorRegistry2` (two-tier burn) | [`0x6d513D431Ea76CfeBB85AaD637664dda32560Cd6`](https://robinhoodchain.blockscout.com/address/0x6d513D431Ea76CfeBB85AaD637664dda32560Cd6) |
+| `CuratorRegistry2` (two-tier burn) | [`0x6D513d431EA76CfEbb85AAd637664DdA32560Cd6`](https://robinhoodchain.blockscout.com/address/0x6D513d431EA76CfEbb85AAd637664DdA32560Cd6) |
 | `BasketFactory` (frozen shelf) | [`0x6D8C85C8Ac7620aBb3010EE29b20Da1c76093BEf`](https://robinhoodchain.blockscout.com/address/0x6D8C85C8Ac7620aBb3010EE29b20Da1c76093BEf) |
-| `FeeSplitter` (60/40, immutable) | [`0x5044AbAD3aFa76DEa762fb0750E22B92eB46a494`](https://robinhoodchain.blockscout.com/address/0x5044AbAD3aFa76DEa762fb0750E22B92eB46a494) |
-| `CuratorGuardian` (cap raises only) | [`0xC93b74B490D1bdd71045766c90F1F743D0C356be`](https://robinhoodchain.blockscout.com/address/0xC93b74B490D1bdd71045766c90F1F743D0C356be) |
+| `FeeSplitter` (60/40, immutable) | [`0x5044aBAD3AFA76DeA762fb0750E22B92eB46A494`](https://robinhoodchain.blockscout.com/address/0x5044aBAD3AFA76DeA762fb0750E22B92eB46A494) |
+| `CuratorGuardian` (cap raises only) | [`0xc93B74B490D1bDD71045766C90F1F743D0c356Be`](https://robinhoodchain.blockscout.com/address/0xc93B74B490D1bDD71045766C90F1F743D0c356Be) |
 | `LogoRegistry` | [`0x91F4297779F13ED44d218F328F89c6C9AF7DB567`](https://robinhoodchain.blockscout.com/address/0x91F4297779F13ED44d218F328F89c6C9AF7DB567) |
 
 ## V2 — agentic baskets (platform live 2026-07-18)
@@ -81,7 +81,20 @@ report *stale* rather than a guessable price when a window is uncovered.
 | `PoolMaker` | [`0x915c32c68CD501587E701Bf344791f5d90078C64`](https://robinhoodchain.blockscout.com/address/0x915c32c68CD501587E701Bf344791f5d90078C64) |
 
 Plus fifteen per-asset TWAP feeds (six v4, nine v2), all source-verified on
-Blockscout. The first agentic baskets are opening now; how agents are bounded:
+Blockscout.
+
+**The first agentic baskets are live**, each with its own USDG payout
+distributor (7-day cycle), published through the public factory under the
+same rules any curator gets:
+
+| Basket | Symbol | Strategy | Token · Distributor |
+|---|---|---|---|
+| Agentic Virtuals | `VVIRT` | cross-sectional momentum over the Virtuals agent ecosystem | [`0xca48…6f5b`](https://robinhoodchain.blockscout.com/address/0xca485830173695650b6bcD773fA0443E87656f5b) · [`0x263b…c6F9`](https://robinhoodchain.blockscout.com/address/0x263bBfe174CC042F37b29B336329BC605874c6F9) |
+| Agentic MAG7 | `VMAG` | the seven, momentum-tilted inside hard caps | [`0x39b3…520F`](https://robinhoodchain.blockscout.com/address/0x39b3B771D6fAbF4eFD775Ae090AfDdf14f82520F) · [`0x6B67…Ee93`](https://robinhoodchain.blockscout.com/address/0x6B67aa113f9668F926FFE1AcD63E25F32B80Ee93) |
+| Crypto Twitter | `VCT` | the chain-native tape, rotated by momentum and attention | [`0x43ec…7629`](https://robinhoodchain.blockscout.com/address/0x43ec05E56CE74bbaFeaE3049e669b14C04347629) · [`0xcd45…7700`](https://robinhoodchain.blockscout.com/address/0xcd452f0da019e6FFe9D0C5D9f62FC80932187700) |
+
+Recipes rotate by design — read current holdings via `constituents()` /
+`units()` on the token. How agents are bounded:
 [docs.vimen.org/docs/agentic](https://docs.vimen.org/docs/agentic).
 
 ## How it works
