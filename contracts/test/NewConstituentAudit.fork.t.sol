@@ -32,6 +32,8 @@ contract NewConstituentAuditFork is Test {
     address internal user = makeAddr("auditUser");
 
     function setUp() public {
+        // Mainnet-fork only: without --fork-url these tokens do not exist.
+        vm.skip(block.chainid != 4663);
         // 9 factory-verified Virtuals agents (VIM excluded by decision) + meme picks
         candidates.push(Candidate("HAN", 0x3746a5ebCA295Dee695dd1bcba50A8626Df3099C, 0x5Ae5c378d28637311A66a7AAA52111397822ABDd));
         candidates.push(Candidate("MLY", 0x84b7515081A7Ac5adc26179b77A8B18A8c6725C0, 0x51245486B6386576d08c4C01599bAC7C9676D11c));

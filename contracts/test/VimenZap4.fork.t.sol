@@ -42,6 +42,8 @@ contract VimenZap4Fork is Test {
     uint256 taxBps; // HAN tax on the pair->buyer hop, measured
 
     function setUp() public {
+        // Mainnet-fork only: without --fork-url these contracts do not exist.
+        vm.skip(block.chainid != 4663);
         zap = new VimenZap4(IPoolManager(POOL_MANAGER), IWETH9(WETH));
 
         address[] memory toks = new address[](3);
@@ -372,6 +374,8 @@ contract VimenZap4RialtoFork is Test {
     address user = makeAddr("ethRialtoUser");
 
     function setUp() public {
+        // Mainnet-fork only: without --fork-url these contracts do not exist.
+        vm.skip(block.chainid != 4663);
         zap = new VimenZap4(IPoolManager(POOL_MANAGER), IWETH9(WETH));
         address[] memory toks = new address[](2);
         toks[0] = NVDA;
